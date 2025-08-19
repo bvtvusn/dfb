@@ -30,3 +30,22 @@ DFB V1 is a small, text-first archive format for bundling multiple files into on
 
 **Notes**
 - No per-file lengths are stored. To minimize collision risk, use long per-archive separators (UUIDs). For absolute binary robustness consider a future length-prefixed variant.
+
+**Example data**
+```language
+DFB V1
+SEPARATOR: ----DFB-SEP::b3f4e6c0-8a2f-4d1e-9f40-abcdef123456----
+
+----DFB-SEP::b3f4e6c0-8a2f-4d1e-9f40-abcdef123456----
+FILENAME: docs/readme.txt
+ENCODING: utf-8
+
+Hello — this README is plain UTF-8 text.
+
+----DFB-SEP::b3f4e6c0-8a2f-4d1e-9f40-abcdef123456----
+FILENAME: images/icon.png
+ENCODING: base64
+MIME: image/png
+
+iVBORw0KGgoAAAANSUhEUgAAADAAAAAlAQAAAAAsYlcCAAAACklEQVR4AWMZBQAPOQQNR8+WWwAAAABJRU5ErkJggg==
+```
