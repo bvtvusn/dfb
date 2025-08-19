@@ -8,6 +8,7 @@ This repository bundle contains:
 - `CONTRIBUTING.md` — contribution notes.
 - `LICENSE` — MIT license.
 - `logo.svg` — small SVG logo.
+- `scripts` — script for extracting dfb data to computer files (or bundling files).
 
 Typical usage
 -----------
@@ -21,5 +22,6 @@ Quick start
 License
 -------
 MIT — see `LICENSE` for the full text.
+
 
 
