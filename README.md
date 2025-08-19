@@ -14,6 +14,26 @@ Typical usage
 -----------
 The format specification can be given to an AI assistant, and the AI assistant can then be asked to output multiple files in the dfb format. This data can then be copied over to the DFB extract script on the computer, and you immediately have all the files on your computer.
 
+Example data
+-----------
+```language
+DFB V1
+SEPARATOR: ----DFB-SEP::b3f4e6c0-8a2f-4d1e-9f40-abcdef123456----
+
+----DFB-SEP::b3f4e6c0-8a2f-4d1e-9f40-abcdef123456----
+FILENAME: docs/readme.txt
+ENCODING: utf-8
+
+Hello — this README is plain UTF-8 text.
+
+----DFB-SEP::b3f4e6c0-8a2f-4d1e-9f40-abcdef123456----
+FILENAME: images/icon.png
+ENCODING: base64
+MIME: image/png
+
+iVBORw0KGgoAAAANSUhEUgAAADAAAAAlAQAAAAAsYlcCAAAACklEQVR4AWMZBQAPOQQNR8+WWwAAAABJRU5ErkJggg==
+```
+
 Quick start
 -----------
 1. Run the python script. A GUI window opens.
@@ -22,6 +42,7 @@ Quick start
 License
 -------
 MIT — see `LICENSE` for the full text.
+
 
 
 
