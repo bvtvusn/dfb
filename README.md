@@ -1,6 +1,6 @@
 # DFB — Delimited File Bundle
 
-AI friendly file format used for bundling multiple text files into one file. Can later be extracted using a script. DFB (Delimited File Bundle) is a minimal, text-first archive format. Text files remain human-editable; binary files use `ENCODING: base64` so the bundle stays plain text. 
+AI friendly file format used for bundling multiple text files into one file. Files can later be extracted using a script. DFB (Delimited File Bundle) is a minimal, text-first archive format. Text files remain human-editable; binary files use `ENCODING: base64` so the bundle stays plain text. 
 
 This repository bundle contains:
 - `SPEC.md` — the format specification.
@@ -22,6 +22,7 @@ Quick start
 License
 -------
 MIT — see `LICENSE` for the full text.
+
 
 
 
