@@ -16,12 +16,13 @@ The format specification can be given to an AI assistant, and the AI assistant c
 
 Quick start
 -----------
-1. Save this bundle as `dfb-bundle.dfb` or paste its contents into a compatible extractor.
-2. Extract into a chosen directory (extractors must validate filenames and refuse `..` or absolute paths).
+1. Run the python script. A GUI window opens.
+2. Paste in the example dfb text and choose a folder on your computer to extract the data to.
 
 License
 -------
 MIT — see `LICENSE` for the full text.
+
 
 
 
