@@ -1,0 +1,15 @@
+DFB V1
+SEPARATOR: ----DFB-SEP::b3f4e6c0-8a2f-4d1e-9f40-abcdef123456----
+
+----DFB-SEP::b3f4e6c0-8a2f-4d1e-9f40-abcdef123456----
+FILENAME: docs/readme.txt
+ENCODING: utf-8
+
+Hello — this README is plain UTF-8 text.
+
+----DFB-SEP::b3f4e6c0-8a2f-4d1e-9f40-abcdef123456----
+FILENAME: images/icon.png
+ENCODING: base64
+MIME: image/png
+
+iVBORw0KGgoAAAANSUhEUgAAAAMAAAADCAIAAADZSiLoAAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAAAJcEhZcwAAEnQAABJ0Ad5mH3gAAAAlSURBVBhXY9i+fXtOTk53dzeDgoJCVVXV////Gdrb2xmAgIEBAMxaC2tXQs1vAAAAAElFTkSuQmCC
