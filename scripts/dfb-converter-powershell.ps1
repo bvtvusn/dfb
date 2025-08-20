@@ -1,26 +1,36 @@
 Add-Type -AssemblyName System.Windows.Forms
 Add-Type -AssemblyName System.Drawing
 
+# Fixed DFB extractor/bundler GUI
+# - newline normalization
+# - robust separator detection
+# - exact separator matching
+# - tolerant metadata handling (default encoding utf-8)
+# - safe path containment checks
+# - multi-line base64 handling
+# - logging improvements
+# NOTE: minor fixes applied to logging to avoid PowerShell parsing issue with "$var: ..."
+
 # Create main form
 $form = New-Object System.Windows.Forms.Form
-$form.Text = "DFB Converter"
-$form.Size = New-Object System.Drawing.Size(600,400)
+$form.Text = "DFB Converter (Fixed)"
+$form.Size = New-Object System.Drawing.Size(700,500)
 $form.StartPosition = "CenterScreen"
 
 # Folder selection
 $folderLabel = New-Object System.Windows.Forms.Label
-$folderLabel.Location = New-Object System.Drawing.Point(10,20)
+$folderLabel.Location = New-Object System.Drawing.Point(10,16)
 $folderLabel.Size = New-Object System.Drawing.Size(100,20)
 $folderLabel.Text = "Folder:"
 
 $folderBox = New-Object System.Windows.Forms.TextBox
-$folderBox.Location = New-Object System.Drawing.Point(120,20)
-$folderBox.Size = New-Object System.Drawing.Size(350,20)
+$folderBox.Location = New-Object System.Drawing.Point(120,16)
+$folderBox.Size = New-Object System.Drawing.Size(420,20)
 $folderBox.Text = [Environment]::GetFolderPath("UserProfile")
 
 $folderButton = New-Object System.Windows.Forms.Button
-$folderButton.Location = New-Object System.Drawing.Point(480,20)
-$folderButton.Size = New-Object System.Drawing.Size(80,20)
+$folderButton.Location = New-Object System.Drawing.Point(550,16)
+$folderButton.Size = New-Object System.Drawing.Size(100,20)
 $folderButton.Text = "Browse"
 $folderButton.Add_Click({
     $folder = New-Object System.Windows.Forms.FolderBrowserDialog
@@ -31,37 +41,37 @@ $folderButton.Add_Click({
 
 # Buttons
 $extractButton = New-Object System.Windows.Forms.Button
-$extractButton.Location = New-Object System.Drawing.Point(120,60)
+$extractButton.Location = New-Object System.Drawing.Point(120,52)
 $extractButton.Size = New-Object System.Drawing.Size(100,30)
 $extractButton.Text = "Extract"
 
 $bundleButton = New-Object System.Windows.Forms.Button
-$bundleButton.Location = New-Object System.Drawing.Point(240,60)
+$bundleButton.Location = New-Object System.Drawing.Point(240,52)
 $bundleButton.Size = New-Object System.Drawing.Size(100,30)
 $bundleButton.Text = "Bundle"
 
 # DFB text area
 $dfbLabel = New-Object System.Windows.Forms.Label
-$dfbLabel.Location = New-Object System.Drawing.Point(10,110)
+$dfbLabel.Location = New-Object System.Drawing.Point(10,96)
 $dfbLabel.Size = New-Object System.Drawing.Size(100,20)
 $dfbLabel.Text = "DFB Content:"
 
 $dfbBox = New-Object System.Windows.Forms.TextBox
-$dfbBox.Location = New-Object System.Drawing.Point(10,130)
-$dfbBox.Size = New-Object System.Drawing.Size(560,120)
+$dfbBox.Location = New-Object System.Drawing.Point(10,116)
+$dfbBox.Size = New-Object System.Drawing.Size(660,220)
 $dfbBox.Multiline = $true
 $dfbBox.ScrollBars = "Vertical"
 $dfbBox.Font = New-Object System.Drawing.Font("Consolas", 9)
 
 # Log area
 $logLabel = New-Object System.Windows.Forms.Label
-$logLabel.Location = New-Object System.Drawing.Point(10,260)
+$logLabel.Location = New-Object System.Drawing.Point(10,344)
 $logLabel.Size = New-Object System.Drawing.Size(100,20)
 $logLabel.Text = "Log:"
 
 $logBox = New-Object System.Windows.Forms.TextBox
-$logBox.Location = New-Object System.Drawing.Point(10,280)
-$logBox.Size = New-Object System.Drawing.Size(560,100)
+$logBox.Location = New-Object System.Drawing.Point(10,364)
+$logBox.Size = New-Object System.Drawing.Size(660,90)
 $logBox.Multiline = $true
 $logBox.ScrollBars = "Vertical"
 $logBox.ReadOnly = $true
@@ -93,29 +103,25 @@ function New-DFBFromFolder {
     $separator = New-DFBSeparator
     $dfb = @("DFB V1", "SEPARATOR: $separator", "")
     
+    $textExtensions = @('.txt', '.md', '.py', '.js', '.html', '.css', '.json', '.xml', '.yaml', '.yml', '.ini', '.cfg', '.log', '.csv', '.bat', '.ps1', '.sh')
     $files = Get-ChildItem -Path $FolderPath -Recurse -File
     foreach ($file in $files) {
         try {
             $relativePath = $file.FullName.Substring($FolderPath.Length + 1) -replace "\\", "/"
-            
-            # Check if file is likely text-based by extension
-            $textExtensions = @('.txt', '.md', '.py', '.js', '.html', '.css', '.json', '.xml', '.yaml', '.yml', '.ini', '.cfg', '.log', '.csv', '.bat', '.ps1', '.sh')
             $isTextFile = $textExtensions -contains $file.Extension.ToLower()
             
             if ($isTextFile) {
                 try {
-                    $content = Get-Content $file.FullName -Raw -Encoding UTF8
+                    $content = Get-Content -Raw -Encoding UTF8 -Path $file.FullName
                     $encoding = "utf-8"
                 }
                 catch {
-                    # Fall back to binary if text reading fails
                     $bytes = [System.IO.File]::ReadAllBytes($file.FullName)
                     $content = [System.Convert]::ToBase64String($bytes)
                     $encoding = "base64"
                 }
             }
             else {
-                # Binary file - read as bytes and encode as base64
                 $bytes = [System.IO.File]::ReadAllBytes($file.FullName)
                 $content = [System.Convert]::ToBase64String($bytes)
                 $encoding = "base64"
@@ -135,38 +141,41 @@ function New-DFBFromFolder {
 function Extract-DFB {
     param($DFBContent, $OutputFolder)
     
-    if (-not $DFBContent.Trim()) {
+    if (-not $DFBContent -or -not $DFBContent.Trim()) {
         throw "No DFB content to extract"
     }
     
-    $lines = $DFBContent -split "`n"
+    # Normalize newlines to LF only to avoid CR issues
+    $normalized = $DFBContent -replace "`r`n", "`n" -replace "`r", "`n"
+    $lines = $normalized -split "`n"
     Write-Log "Parsing DFB with $($lines.Count) lines"
     
-    # Check header
-    if ($lines[0].Trim() -ne "DFB V1") {
+    # Check header (exact)
+    if ($lines.Count -eq 0 -or $lines[0] -ne "DFB V1") {
         throw "Invalid DFB header"
     }
     
-    # Find separator
+    # Find control block end and SEPARATOR value
     $separator = $null
-    for ($i = 1; $i -lt $lines.Count; $i++) {
-        if ($lines[$i] -match "^SEPARATOR: (.+)$") {
+    $i = 1
+    while ($i -lt $lines.Count) {
+        $line = $lines[$i]
+        if ($line -match '^SEPARATOR:\s*(.+)$') {
             $separator = $matches[1]
-            break
         }
-        if (-not $lines[$i].Trim()) { break }
+        if ($line -eq '') { break }   # blank line ends control block
+        $i++
     }
     
     if (-not $separator) {
-        throw "No separator found"
+        throw "No separator found in control block"
     }
+    Write-Log "Found separator: $separator"
     
-    Write-Log "Found separator: $($separator.Substring(0, [Math]::Min(20, $separator.Length)))..."
-    
-    # Skip control block
-    while ($i -lt $lines.Count -and $lines[$i].Trim()) { $i++ }
+    # Set parsing index to the line after the blank line that ended the control block
+    while ($i -lt $lines.Count -and $lines[$i] -ne '') { $i++ }
+    # now $i is index of blank line; move to next line
     $i++
-    
     Write-Log "Starting to parse entries from line $i"
     
     # Parse entries
@@ -178,8 +187,9 @@ function Extract-DFB {
     while ($i -lt $lines.Count) {
         $line = $lines[$i]
         
-        if ($line.Trim() -eq $separator) {
-            # Save previous entry
+        # Exact-match separator detection (no Trim)
+        if ($line -eq $separator) {
+            # Save previous entry if any
             if ($currentMetadata.Count -gt 0) {
                 $filename = Save-DFBFile -Metadata $currentMetadata -Content $currentContent -OutputFolder $OutputFolder
                 if ($filename) {
@@ -187,8 +197,7 @@ function Extract-DFB {
                     Write-Log "Extracted: $filename"
                 }
             }
-            
-            # Start new entry
+            # Reset for new entry
             $currentMetadata = @{}
             $currentContent = @()
             $inMetadata = $true
@@ -197,16 +206,16 @@ function Extract-DFB {
             continue
         }
         
-        # Process metadata and content
+        # Process metadata or content
         if ($inMetadata) {
-            if (-not $line.Trim()) {
+            if ($line -eq '') {
                 $inMetadata = $false
                 Write-Log "Metadata complete, content starts at line $($i+1)"
             }
             else {
-                if ($line -match "^(.+?): (.+)$") {
+                if ($line -match '^([^:]+):\s*(.*)$') {
                     $key = $matches[1].Trim()
-                    $value = $matches[2].Trim()
+                    $value = $matches[2]  # do not over-strip value
                     $currentMetadata[$key] = $value
                     Write-Log "Added metadata: $key"
                 }
@@ -219,7 +228,7 @@ function Extract-DFB {
         $i++
     }
     
-    # Save last entry
+    # Save final entry if present
     if ($currentMetadata.Count -gt 0) {
         Write-Log "Processing final entry with metadata: $($currentMetadata.Keys -join ', ')"
         $filename = Save-DFBFile -Metadata $currentMetadata -Content $currentContent -OutputFolder $OutputFolder
@@ -244,38 +253,51 @@ function Save-DFBFile {
     $filename = $Metadata["FILENAME"]
     Write-Log "Attempting to save file: $filename"
     
-    # Security check
-    if ($filename -match "\.\.|:") {
-        Write-Log "Skipping unsafe filename: $filename"
-        return $null
-    }
-    
     try {
-        $outputPath = Join-Path $OutputFolder $filename
-        $outputDir = Split-Path $outputPath -Parent
+        # Combine and resolve full paths to prevent path traversal
+        $outputPath = Join-Path -Path $OutputFolder -ChildPath $filename
+        $fullOutput = [System.IO.Path]::GetFullPath($outputPath)
+        $fullRoot = [System.IO.Path]::GetFullPath($OutputFolder)
+        if (-not $fullOutput.StartsWith($fullRoot, [System.StringComparison]::OrdinalIgnoreCase)) {
+            Write-Log "Rejected filename that escapes root: $filename"
+            return $null
+        }
         
+        $outputDir = Split-Path -Path $fullOutput -Parent
         if (-not (Test-Path $outputDir)) {
             New-Item -ItemType Directory -Path $outputDir -Force | Out-Null
         }
         
-        $encoding = $Metadata["ENCODING"].ToLower()
+        $encoding = 'utf-8'
+        if ($Metadata.ContainsKey("ENCODING") -and $Metadata["ENCODING"]) {
+            $encoding = $Metadata["ENCODING"].ToLower()
+        }
+        
         Write-Log "File encoding: $encoding, content lines: $($Content.Count)"
         
         if ($encoding -eq "base64") {
-            $base64Content = $Content -join "" -replace "`n|`r| "
-            $bytes = [System.Convert]::FromBase64String($base64Content)
-            [System.IO.File]::WriteAllBytes($outputPath, $bytes)
+            # Join all content lines and strip whitespace before decoding
+            $base64Content = ($Content -join "") -replace '\s',''
+            try {
+                $bytes = [System.Convert]::FromBase64String($base64Content)
+            } catch {
+                Write-Log ("Invalid base64 for {0}: {1}" -f $filename, $_.Exception.Message)
+                return $null
+            }
+            [System.IO.File]::WriteAllBytes($fullOutput, $bytes)
             Write-Log "Saved binary file: $filename ($($bytes.Length) bytes)"
         }
         else {
-            [System.IO.File]::WriteAllText($outputPath, ($Content -join "`n"), [System.Text.Encoding]::UTF8)
+            # Treat as UTF-8 text; join lines using LF (we normalized earlier)
+            $text = $Content -join "`n"
+            [System.IO.File]::WriteAllText($fullOutput, $text, [System.Text.Encoding]::UTF8)
             Write-Log "Saved text file: $filename ($($Content.Count) lines)"
         }
         
         return $filename
     }
     catch {
-        Write-Log "Failed to extract $filename`: $($_.Exception.Message)"
+        Write-Log ("Failed to extract {0}: {1}" -f $filename, $_.Exception.Message)
         return $null
     }
 }
@@ -284,11 +306,10 @@ function Save-DFBFile {
 $extractButton.Add_Click({
     try {
         $dfbContent = $dfbBox.Text
-        if (-not $dfbContent.Trim()) {
+        if (-not $dfbContent -or -not $dfbContent.Trim()) {
             [System.Windows.Forms.MessageBox]::Show("No DFB content to extract", "Warning", "OK", "Warning")
             return
         }
-        
         Write-Log "Starting extraction..."
         $extractedFiles = Extract-DFB -DFBContent $dfbContent -OutputFolder $folderBox.Text
         Write-Log "Extraction complete. Extracted $($extractedFiles.Count) files"
@@ -306,7 +327,6 @@ $bundleButton.Add_Click({
             [System.Windows.Forms.MessageBox]::Show("Selected folder does not exist", "Error", "OK", "Error")
             return
         }
-        
         Write-Log "Creating DFB from folder..."
         $dfbContent = New-DFBFromFolder -FolderPath $folderBox.Text
         $dfbBox.Text = $dfbContent
