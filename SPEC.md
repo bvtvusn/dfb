@@ -6,7 +6,7 @@ DFB V1 is a small, text-first archive format for bundling multiple files into on
 **Top-level layout**
 1. Header (first line): `DFB V1`
 2. Control block (ASCII `KEY: value` lines), terminated by one blank line. **Required** key:
-   - `SEPARATOR: <separator-line>` — a long, newline-free ASCII string (preferrably including a UUID); generate a fresh separator per-archive.
+   - `SEPARATOR: <separator-line>` — a long, newline-free ASCII string (preferrably including a UUID); generate a fresh separator per-archive. The separator separates each file in the bundle.
 3. Entries (zero or more). Each entry:
    - A line exactly equal to the separator.
    - A metadata block (`KEY: value` lines), terminated by a blank line.
@@ -29,7 +29,7 @@ DFB V1 is a small, text-first archive format for bundling multiple files into on
 - Document and enforce a duplicate-file policy (fail/overwrite/rename).
 
 **Notes**
-- No per-file lengths are stored. To minimize collision risk, use long per-archive separators (UUIDs). For absolute binary robustness consider a future length-prefixed variant.
+- No per-file lengths are stored. To minimize collision risk, use long per-archive separators (UUIDs). For absolute binary robustness consider a future length-prefixed variant. But it is not necessary with long separators as long as one makes sure it does not appear elsewhere in the file.
 
 **Format example**
 ```language
@@ -49,4 +49,5 @@ MIME: image/png
 
 iVBORw0KGgoAAAANSUhEUgAAADAAAAAlAQAAAAAsYlcCAAAACklEQVR4AWMZBQAPOQQNR8+WWwAAAABJRU5ErkJggg==
 ```
+
 
